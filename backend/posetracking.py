@@ -1,7 +1,6 @@
 import cv2
 import mediapipe as mp
 import numpy as np
-
 mp_drawing = mp.solutions.drawing_utils
 mp_pose = mp.solutions.pose
 
@@ -43,6 +42,8 @@ def calculate_statistics(landmarks, world_landmarks):
                world_landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].y,
                world_landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].z]
     world_right_wrist = [landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].y]
+    left_elbow = [landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].x, landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].y]
+    left_wrist = [landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].x, landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].y]
     
     # Hips Below knees
     if landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].y <= landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].y and landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].y <= landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].y:
@@ -74,6 +75,8 @@ def calculate_statistics(landmarks, world_landmarks):
     
     'grip_width': np.linalg.norm(np.array(world_left_wrist) - np.array(world_right_wrist)),
     
+    'elbow_angle': calculate_angle(left_shoulder, left_elbow, left_wrist),
+    
     'weight_shift': (shoulder_mid_x - ankle_mid_x),
     
     'lateral_hip_position': left_mid_x,
@@ -86,9 +89,10 @@ def calculate_statistics(landmarks, world_landmarks):
     return metrics
 
 
-def analyze_video(video=0):
-    cap = cv2.VideoCapture(video)
 
+def analyze_video(video=0):
+
+    cap = cv2.VideoCapture(video)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
@@ -102,12 +106,14 @@ def analyze_video(video=0):
     lateral_shift = 0
     perSquatMetrics = {}
     current_rep = {
-        'max_depth': 0,
+        'max_depth': float('inf'),
         'min_spine_angle': float('inf'),
         'max_lateral_shift': 0,
         'max_forward_shift': 0,
         'foot_distance': 0,
         'grip_width': 0,
+        'elbow_angle': 0,
+        'hips_below_knees': False,
         'knee_balance_bottom': None,
         'bottom_position_held': 0,  # frames spent at bottom position
         'knee_imbalance': 0
@@ -117,6 +123,10 @@ def analyze_video(video=0):
         while cap.isOpened():
             ret, frame = cap.read()
             
+            if not ret or frame is None:
+                print("Error: Failed to read frame.")
+                break
+
             # Recolor Image because we want our image to be passed to MediaPipe in format to RGB (Default is of BGR)
             image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             image.flags.writeable = False
@@ -136,15 +146,13 @@ def analyze_video(video=0):
                 apex = min((world_landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].y + world_landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].y) / 2, apex) # Bottom of Squat
                 
                 # Display the metrics on the image
-                print(metrics["knee_balance"])
-                print(metrics["foot_distance"])
-                cv2.putText(image, str(metrics["knee_balance"]), (10, 30), cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
+                cv2.putText(image, str(metrics["depth_left"]), (10, 30), cv2.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
                 cv2.putText(image, str(metrics["knee_balance"][0] - metrics["knee_balance"][1]), (10, 50), cv2.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
                 cv2.putText(image, stage, (10, 70), cv2.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
                 cv2.putText(image, str(counter), (10, 90), cv2.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
                 
                 # Get Squat Metrics Per Frame and Per Rep
-                if metrics["depth_left"] > 160 :
+                if metrics["depth_left"] > 150 :
                     if stage != "top rep":
                         if counter > 0:
                             perSquatMetrics[counter] = current_rep.copy()
@@ -155,38 +163,36 @@ def analyze_video(video=0):
                                 'max_forward_shift': 0,
                                 'foot_distance': 0,
                                 'grip_width': 0,
+                                'elbow_angle': metrics["elbow_angle"],  # Initialize with current value
+                                'hips_below_knees': metrics["hips_below_knees"],  # Initialize with current value
                                 'knee_balance_bottom': None,
-                                'bottom_position_held': 0,  # frames spent at bottom position
-                                'hips_below_knees': False,
+                                'bottom_position_held': 0,
                                 'knee_imbalance': 0
                             }
                     stage = "top rep"
                     top_hip_position = metrics["lateral_hip_position"]
                     lateral_shift = 0
-                if metrics["depth_left"] < 160 and stage == 'top rep':
+                if metrics["depth_left"] < 150 and stage == 'top rep':
                     stage = "bottom rep"
                     counter += 1
                 if stage == "bottom rep":
-                    current_rep['max_depth'] = min(current_rep['max_depth'], metrics["depth_left"])
+                    current_rep['max_depth'] = min(current_rep['max_depth'], metrics["depth_left"]) if metrics["depth_left"] > 0 else current_rep['max_depth']
                     current_rep['min_spine_angle'] = min(current_rep['min_spine_angle'], metrics["spine_angle_3"])
                     lateral_shift = (top_hip_position - metrics["lateral_hip_position"]) * 100
                     current_rep['max_lateral_shift'] = lateral_shift if abs(lateral_shift) > abs(current_rep['max_lateral_shift']) else current_rep['max_lateral_shift']
                     current_rep['max_forward_shift'] = metrics['weight_shift'] if abs(metrics['weight_shift']) > abs(current_rep['max_forward_shift']) else current_rep['max_forward_shift']
                     current_rep['foot_distance'] = max(current_rep['foot_distance'], metrics["foot_distance"])
                     current_rep['grip_width'] = max(current_rep['grip_width'], metrics["grip_width"])
-                    knee_imbalance = metrics["knee_balance"][0] - metrics["knee_balance"][1]
-                    current_rep['knee_imbalance'] = knee_imbalance if abs(knee_imbalance) > abs(current_rep['knee_imbalance']) else current_rep['knee_imbalance']
+                    current_rep['elbow_angle'] = max(current_rep['elbow_angle'], metrics["elbow_angle"])
+                    current_rep['hips_below_knees'] = current_rep['hips_below_knees'] or metrics["hips_below_knees"]
 
-                    if metrics["hips_below_knees"]:
-                        current_rep['hips_below_knees'] = True
-                        
                     # Track knee balance at bottom position
                     if metrics["depth_left"] < 120:  # Deep squat position
                         current_rep['bottom_position_held'] += 1
-
                         if current_rep['knee_balance_bottom'] is None:
                             current_rep['knee_balance_bottom'] = metrics["knee_balance"]
-                    
+                        knee_imbalance = metrics["knee_balance"][0] - metrics["knee_balance"][1]
+                        current_rep['knee_imbalance'] = knee_imbalance if abs(knee_imbalance) > abs(current_rep['knee_imbalance']) else current_rep['knee_imbalance']
             except:
                 pass
             
@@ -198,12 +204,16 @@ def analyze_video(video=0):
             cv2.imshow('Mediapipe Feed', image)
             
             if cv2.waitKey(10) & 0xFF == ord('q'):
+                perSquatMetrics[counter] = current_rep.copy()
                 break
             
             prev_landmarks = landmarks
             prev_world_landmarks = prev_world_landmarks
-
-        cap.release()
-        cv2.destroyAllWindows()
+        
+    cap.release()
+    cv2.destroyAllWindows()
     
+    print(perSquatMetrics)    
+    return perSquatMetrics
+
     
