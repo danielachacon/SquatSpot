@@ -214,7 +214,6 @@ def analyze_video(video=0):
     cap.release()
     cv2.destroyAllWindows()
     
-    print(perSquatMetrics)    
     return perSquatMetrics
 
     
