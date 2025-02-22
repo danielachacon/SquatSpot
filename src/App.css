@@ -1,42 +1,244 @@
-#root {
-  max-width: 1280px;
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap');
+
+/* Reset default styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.app {
+  min-height: 100vh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  background-color: #1a1f2e;
+  color: white;
+}
+
+.header {
+  background-color: #232937;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.barbell-logo {
+  height: 4rem;
+  color: #dc2626;
+}
+
+.title {
+  font-family: 'Oswald', sans-serif;
+  font-size: 4rem;
+  font-weight: 700;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: white;
+}
+
+.main-content {
+  flex : 1;
+  width: 100%;
+  height: calc(100vh - 100px);
+  padding: 0 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;  /* Increased gap between panels */
+  overflow-y: auto;  /* Enable scrolling */
+}
+
+.content-wrapper {
+  width: 95%;
+  height: 95%;
+  display: flex;
+  gap: 2rem;
+  padding: 0.5rem;
   margin: 0 auto;
-  padding: 2rem;
+}
+
+.panel {
+  flex: 1;
+  background-color: #1c1c1c;
+  border-radius: 12px;
+  padding: 1.75rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  height: 95%;
+}
+
+.input-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.button-row {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 1rem;
+  gap: 1rem;
+}
+
+.action-button {
+  flex: 1;
+  padding: 1rem;
+  font-family: 'Oswald', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  background-color: #c61a1a;
+  color: #fffdfd;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.action-button:hover {
+  background-color: #ef4444;
+}
+
+.compare-panel .button-row {
+  display: flex;
+  justify-content: center;  /* Center the button */
+  width: 100%;
+  margin-bottom: 1rem;
+  height: 4rem;
+}
+
+.compare-panel .action-button {
+  width: 30%;
+  padding: 1rem;
+  font-family: 'Oswald', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  height: 100%;
+}
+
+.footer {
+  background-color: #232937;
+  padding: 1rem;
+  width: 100%;
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.2);
+  position: relative;
+}
+
+.footer-nav {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.footer-link {
+  color: white;
+  text-decoration: none;
+  font-family: 'Oswald', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: color 0.3s;
+}
+
+.footer-link:hover {
+  color: #c61a1a;
+}
+
+.webcam-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 1rem;
+  width: 100%;
+  height: calc(100% - 60px);
+}
+
+.webcam-wrapper {
+  width: 100%;
+  height: 100%;
+}
+
+.webcam-wrapper video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.video-container {
+  height: 100%; /* Ensure video container fills available space */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.uploaded-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.main-content {
+  width: 100%;
+  height: calc(100vh - 76px);
+  padding: 0 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.top-row {
+  display: flex;
+  gap: 2rem;
+  min-height: 450px; /* Decrease height to prevent overflow */
+  align-items: stretch; /* Ensures panels are the same height */
+}
+
+
+.bottom-row {
+  width: calc(100% - 4rem);
+  margin: 0 auto;
+  display: flex;
+  min-height: 100vh;  /* Same height as top panels */
+  margin-bottom: 2rem;  /* Add some space at the bottom */
+}
+
+.input-panel,
+.compare-panel {
+  flex: 1;
+  min-height: 75vh; /* Increase individual panel height */
+  height: auto; /* Allows them to expand naturally */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.analysis-panel {
+  flex: 1;
+  height: 100%;
+  background-color: #1c1c1c;
+  border-radius: 12px;
+  padding: 1.75rem;
+}
+
+.analysis-panel h2 {
+  font-family: 'Oswald', sans-serif;
+  font-size: 2.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 1rem;
   text-align: center;
-}
-
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
 }
