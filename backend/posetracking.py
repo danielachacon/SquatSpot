@@ -90,7 +90,7 @@ def analyze_video(video=0):
     mp_drawing = mp.solutions.drawing_utils
     mp_pose = mp.solutions.pose
 
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(video)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
