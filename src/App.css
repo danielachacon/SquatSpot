@@ -211,7 +211,7 @@
   width: calc(100% - 4rem);
   margin: 0 auto;
   display: flex;
-  min-height: 100vh;  /* Same height as top panels */
+  min-height: 200vh;  /* Same height as top panels */
   margin-bottom: 2rem;  /* Add some space at the bottom */
 }
 

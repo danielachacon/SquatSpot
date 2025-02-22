@@ -1,15 +1,18 @@
-from flask import Flask
+from flask import Flask, send_from_directory
 from flask_socketio import SocketIO
-from pose import process_frame  # Import function from pose.py
+import os
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="static")
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-@socketio.on("message")
-def handle_frame(frame_data):
-    """Receives a frame, processes it, and sends it back to the frontend."""
-    processed_frame = process_frame(frame_data)
-    socketio.emit("processed_frame", processed_frame)
+# Serve React App
+@app.route("/")
+def serve_react():
+    return send_from_directory("static", "index.html")
+
+@app.route("/<path:path>")
+def serve_static_files(path):
+    return send_from_directory("static", path)
 
 if __name__ == "__main__":
     socketio.run(app, host="0.0.0.0", port=5000, debug=True)

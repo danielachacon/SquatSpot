@@ -1,6 +1,9 @@
 import cv2
 import mediapipe as mp
 import numpy as np
+import base64
+from io import BytesIO
+from PIL import Image
 
 mp_drawing = mp.solutions.drawing_utils
 mp_pose = mp.solutions.pose
@@ -205,5 +208,6 @@ def analyze_video(video=0):
 
         cap.release()
         cv2.destroyAllWindows()
-    
-    
+
+
+
