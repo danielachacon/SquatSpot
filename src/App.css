@@ -1,12 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap');
 
-/* Reset default styles */
+/* RESET DEFAULT STYLES */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+/* GENERAL APP STYLING */
 .app {
   min-height: 100vh;
   width: 100vw;
@@ -16,6 +17,7 @@
   color: white;
 }
 
+/* HEADER STYLING */
 .header {
   background-color: #232937;
   padding: 1rem;
@@ -43,15 +45,16 @@
   color: white;
 }
 
+/* MAIN CONTENT LAYOUT */
 .main-content {
-  flex : 1;
+  flex: 1;
   width: 100%;
   height: calc(100vh - 100px);
   padding: 0 2rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;  /* Increased gap between panels */
-  overflow-y: auto;  /* Enable scrolling */
+  gap: 1rem;
+  overflow-y: auto;
 }
 
 .content-wrapper {
@@ -63,6 +66,7 @@
   margin: 0 auto;
 }
 
+/* PANEL STYLING */
 .panel {
   flex: 1;
   background-color: #1c1c1c;
@@ -72,58 +76,86 @@
   height: 95%;
 }
 
+/* BUTTONS: Ensuring Consistency in Size, Shape, and Color */
+.button-row {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 1.5rem;
+  gap: 1.5rem;
+}
+
+.action-button,
+.compare-button {
+  width: 100%;
+  padding: 0.5rem;
+  font-family: "Oswald", sans-serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  background-color: #dc2626; /* Same color for all */
+  color: white;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.action-button:hover,
+.compare-button:hover {
+  background-color: #ef4444;
+  transform: scale(1.05);
+}
+
+/* INPUT PANEL */
 .input-panel {
   display: flex;
   flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
-.button-row {
+.large-buttons .compare-button {
+  padding: 0.5rem 1rem;  /* Reduced padding */
+  font-size: 1.5rem;     /* Smaller font size */
+  height: 3.3rem;          /* Reduced height */
+  min-width: 150px;      /* Smaller minimum width */
+}
+
+/* WEBCAM DISPLAY */
+.webcam-container {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
+  align-items: center;
   width: 100%;
-  margin-bottom: 1rem;
-  gap: 1rem;
+  height: auto;
+  margin-top: 1rem;
 }
 
-.action-button {
-  flex: 1;
-  padding: 1rem;
-  font-family: 'Oswald', sans-serif;
-  font-size: 1.2rem;
-  font-weight: 500;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  background-color: #c61a1a;
-  color: #fffdfd;
-  border: none;
+.webcam-feed {
+  width: 640px;
+  height: 480px;
   border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.3s;
+  border: 3px solid #c61a1a;
 }
 
-.action-button:hover {
-  background-color: #ef4444;
-}
-
-.compare-panel .button-row {
-  display: flex;
-  justify-content: center;  /* Center the button */
-  width: 100%;
-  margin-bottom: 1rem;
-  height: 4rem;
-}
-
-.compare-panel .action-button {
-  width: 30%;
-  padding: 1rem;
-  font-family: 'Oswald', sans-serif;
-  font-size: 1.5rem;
-  font-weight: 500;
-  letter-spacing: 2px;
-  text-transform: uppercase;
+/* VIDEO UPLOAD */
+.video-container {
   height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
+.uploaded-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+/* FOOTER STYLING */
 .footer {
   background-color: #232937;
   padding: 1rem;
@@ -155,76 +187,33 @@
   color: #c61a1a;
 }
 
-.webcam-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: 1rem;
-  width: 100%;
-  height: calc(100% - 60px);
-}
-
-.webcam-wrapper {
-  width: 100%;
-  height: 100%;
-}
-
-.webcam-wrapper video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 8px;
-}
-
-.video-container {
-  height: 100%; /* Ensure video container fills available space */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.uploaded-video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 8px;
-}
-
-.main-content {
-  width: 100%;
-  height: calc(100vh - 76px);
-  padding: 0 2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
+/* FLEXIBLE PANEL LAYOUT */
 .top-row {
   display: flex;
   gap: 2rem;
-  min-height: 450px; /* Decrease height to prevent overflow */
-  align-items: stretch; /* Ensures panels are the same height */
+  min-height: 450px;
+  align-items: stretch;
 }
-
 
 .bottom-row {
   width: calc(100% - 4rem);
   margin: 0 auto;
   display: flex;
-  min-height: 200vh;  /* Same height as top panels */
-  margin-bottom: 2rem;  /* Add some space at the bottom */
+  min-height: 200vh;
+  margin-bottom: 2rem;
 }
 
 .input-panel,
 .compare-panel {
   flex: 1;
-  min-height: 75vh; /* Increase individual panel height */
-  height: auto; /* Allows them to expand naturally */
+  min-height: 75vh;
+  height: auto;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 }
 
+/* ANALYSIS PANEL */
 .analysis-panel {
   flex: 1;
   height: 100%;

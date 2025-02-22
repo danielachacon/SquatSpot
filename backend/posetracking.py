@@ -1,9 +1,6 @@
 import cv2
 import mediapipe as mp
 import numpy as np
-import base64
-from io import BytesIO
-from PIL import Image
 
 mp_drawing = mp.solutions.drawing_utils
 mp_pose = mp.solutions.pose
@@ -89,11 +86,9 @@ def calculate_statistics(landmarks, world_landmarks):
     return metrics
 
 
-def analyze_video(video=0):
-    cap = cv2.VideoCapture(video)
-
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+def analyze_video(video_source=0):
+    cap = cv2.VideoCapture(video_source)
+    target_width, target_height = 640, 480
 
     counter = 0
     stage = None
@@ -119,6 +114,9 @@ def analyze_video(video=0):
     with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
         while cap.isOpened():
             ret, frame = cap.read()
+
+            if not ret:
+                break # for uploaded videos
             
             # Recolor Image because we want our image to be passed to MediaPipe in format to RGB (Default is of BGR)
             image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -130,7 +128,9 @@ def analyze_video(video=0):
             # Recolor back to BGR for opencv
             image.flags.writeable = True
             image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-            
+
+            image = resize_and_crop(image, target_width, target_height)  # Resize the frame to 640x480
+
             # Extract Landmarks
             try:
                 landmarks = results.pose_landmarks.landmark
@@ -197,11 +197,14 @@ def analyze_video(video=0):
             mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS, 
                                     mp_drawing.DrawingSpec(color=(0,255,0), thickness=2, circle_radius=2),
                                     mp_drawing.DrawingSpec(color=(0,0,255), thickness=2, circle_radius=2))
-            
-            cv2.imshow('Mediapipe Feed', image)
-            
-            if cv2.waitKey(10) & 0xFF == ord('q'):
-                break
+            #replaces cv2 imshow with the following so that cv2 encodes the frames as JPEG (for web streaming) and uses
+            #yield to continuously send frames back to flask
+            #Got rid of the wait key, bc flask doesn't need it for streaming
+            _, buffer = cv2.imencode('.jpg', image)
+            frame_bytes = buffer.tobytes()
+
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
             
             prev_landmarks = landmarks
             prev_world_landmarks = prev_world_landmarks
@@ -210,4 +213,21 @@ def analyze_video(video=0):
         cv2.destroyAllWindows()
 
 
+def resize_and_crop(image, target_width=640, target_height=480):
+    """Resizes and crops the image while maintaining aspect ratio."""
+    h, w = image.shape[:2]
+
+    #maintain asp ratio
+    scale = min(target_width / w, target_height / h)
+    new_w, new_h = int(w * scale), int(h * scale)
+
+    resized = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_AREA)
+
+    #out is 640x480 with black padding if needed
+    canvas = np.zeros((target_height, target_width, 3), dtype=np.uint8)
+    start_x = (target_width - new_w) // 2
+    start_y = (target_height - new_h) // 2
+    canvas[start_y:start_y + new_h, start_x:start_x + new_w] = resized
+
+    return canvas
 
