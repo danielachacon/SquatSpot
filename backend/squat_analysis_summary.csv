@@ -1,3 +1,3 @@
 ,max_depth,min_spine_angle,max_lateral_shift,max_forward_shift,foot_distance,grip_width,elbow_angle,knee_balance_right,knee_balance_left,bottom_position_held,knee_imbalance
-mean,63.62,-1.19,-0.34,-0.63,0.56,0.15,96.53,93.34,85.14,25.39,23.87
-std,36.23,0.07,1.12,0.19,0.17,0.05,66.2,24.96,33.3,19.52,40.0
+mean,63.62,-1.19,-0.34,-0.63,0.56,0.8,96.53,93.34,85.14,25.39,23.87
+std,36.23,0.07,1.12,0.19,0.17,0.23,66.2,24.96,33.3,19.52,40.0
