@@ -2,6 +2,8 @@
 
 SquatSpot revolutionizes squat form analysis by providing real-time feedback and detailed metrics through advanced computer vision and AI technology.
 
+## 🏆 Hacklytics 2025 Winner - Best AI Application Built with Cloudflare
+
 ## 🛠️ What It Does
 SquatSpot offers comprehensive squat analysis through:
 
