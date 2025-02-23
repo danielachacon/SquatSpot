@@ -7,7 +7,6 @@ from datetime import datetime
 mp_drawing = mp.solutions.drawing_utils
 mp_pose = mp.solutions.pose
 
-# Calculate Angle
 def calculate_angle(a,b,c):
     a = np.array(a)
     b = np.array(b)
@@ -31,7 +30,9 @@ def calculate_statistics(landmarks, world_landmarks):
     world_left_ankle = [world_landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].x,
               world_landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].y,
               world_landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].z]
-    world_left_wrist = [landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].x, landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].y]
+    world_left_wrist = [world_landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].x,
+                       world_landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].y,
+                       world_landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].z]
     left_foot_index = [landmarks[mp_pose.PoseLandmark.LEFT_FOOT_INDEX.value].x, landmarks[mp_pose.PoseLandmark.LEFT_FOOT_INDEX.value].y]
     right_foot_index = [landmarks[mp_pose.PoseLandmark.RIGHT_FOOT_INDEX.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_FOOT_INDEX.value].y]
     left_heel = [landmarks[mp_pose.PoseLandmark.LEFT_HEEL.value].x, landmarks[mp_pose.PoseLandmark.LEFT_HEEL.value].y]
@@ -44,7 +45,9 @@ def calculate_statistics(landmarks, world_landmarks):
     world_right_ankle = [world_landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].x,
                world_landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].y,
                world_landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].z]
-    world_right_wrist = [landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].y]
+    world_right_wrist = [world_landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].x,
+                        world_landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].y,
+                        world_landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].z]
     left_elbow = [landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].x, landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].y]
     left_wrist = [landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].x, landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].y]
 
@@ -74,9 +77,9 @@ def calculate_statistics(landmarks, world_landmarks):
     
     'hips_below_knees': hipsBelowKnees,
         
-    'foot_distance': np.linalg.norm(np.array(world_left_ankle) - np.array(world_right_ankle)),
+    'foot_distance': abs(np.linalg.norm(np.array(world_left_ankle) - np.array(world_right_ankle))),
     
-    'grip_width': np.linalg.norm(np.array(world_left_wrist) - np.array(world_right_wrist)),
+    'grip_width': abs(np.linalg.norm(np.array(world_left_wrist) - np.array(world_right_wrist))),
     
     'elbow_angle': calculate_angle(left_shoulder, left_elbow, left_wrist),
 

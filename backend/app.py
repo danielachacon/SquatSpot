@@ -1,10 +1,11 @@
 from flask import Flask, Response, request, send_file, jsonify, session
 from flask_cors import CORS
 from posetracking import analyze_video_upload, analyze_video
-from analysis import calculate_z_scores_to_gold_standard, analyze_all_reps
+from analysis import calculate_z_scores_to_gold_standard, analyze_all_reps, compare_2_squats
 import os
 from datetime import datetime
 import pandas as pd
+import numpy as np
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
@@ -23,16 +24,21 @@ for folder in [UPLOAD_FOLDER, OUTPUT_FOLDER]:
 @app.route("/upload_video", methods=["POST"])
 def upload_video():
     if "video" not in request.files:
-        return "No video file found", 400
+        return jsonify({"error": "No video file found"}), 400
 
     file = request.files["video"]
     if file.filename == '':
-        return "No selected file", 400
+        return jsonify({"error": "No selected file"}), 400
 
     try:
+        # Create uploads directory if it doesn't exist
+        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+        
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"uploaded_video_{timestamp}.mp4"
         video_path = os.path.join(UPLOAD_FOLDER, filename)
+        
+        print(f"Saving video to: {video_path}")  # Debug print
         file.save(video_path)
         
         output_path, metrics = analyze_video_upload(video_path)
@@ -40,18 +46,21 @@ def upload_video():
             # Store metrics directly if it's already a dict
             session['uploaded_metric'] = metrics
             
-            # Calculate and store analysis - going back to the simpler version
+            # Calculate and store analysis
             z_scores = calculate_z_scores_to_gold_standard(metrics)
             session['analysis_data'] = z_scores
             
             # Calculate and store reps analysis
             reps_analysis = analyze_all_reps(metrics)
-            if isinstance(reps_analysis, pd.DataFrame):
-                reps_analysis = reps_analysis.where(pd.notnull(reps_analysis), None)
-                reps_analysis = reps_analysis.replace({float('nan'): None})
-                session['analysis_reps_data'] = reps_analysis.to_dict('records')
-            else:
-                session['analysis_reps_data'] = reps_analysis
+            
+            # Convert all metrics to list format for frontend
+            reps_list = []
+            for rep_num, rep_data in metrics.items():
+                rep_dict = {k: float(v) if isinstance(v, (np.float32, np.float64)) else v 
+                          for k, v in rep_data.items()}
+                reps_list.append(rep_dict)
+            
+            session['analysis_reps_data'] = reps_list
             
             print("Session after upload:", dict(session))
             return send_file(output_path, mimetype='video/mp4')
@@ -77,19 +86,30 @@ def compare_upload_video():
         video_path = os.path.join(UPLOAD_FOLDER, filename)
         file.save(video_path)
         
-        output_path, session['compare_metric'] = analyze_video_upload(video_path)
+        output_path, metrics = analyze_video_upload(video_path)
+        
         if output_path:
-            # Log the metrics to the console
-            print("Metrics:", session['compare_metric'])  # Log metrics here
+            if 'uploaded_metric' not in session:
+                return "No reference video uploaded. Please upload a video first.", 400
+                
+            # Convert Pandas Series to dictionary or list before storing in session
+            metrics_json = metrics.to_dict() if hasattr(metrics, 'to_dict') else metrics
+            session['compare_metric'] = metrics_json
             
-            # Return the processed video file directly
+            # Compare the two sets of metrics
+            comparison_score = compare_2_squats(metrics, session['uploaded_metric'])
+            # Make sure comparison_score is JSON serializable
+            if isinstance(comparison_score, (pd.Series, pd.DataFrame)):
+                comparison_score = comparison_score.to_dict()
+            
+            session['comparison_score'] = comparison_score
             return send_file(output_path, mimetype='video/mp4')
+            
         return "Failed to process video", 500
             
     except Exception as e:
         print(f"Error: {str(e)}")
         return f"Error processing video: {str(e)}", 500
-
 
 @app.route("/video_feed")
 def video_feed():
@@ -122,6 +142,51 @@ def analyze_reps():
         return jsonify({"error": "No analysis reps data found. Please upload a video first."}), 400
 
     return jsonify(session['analysis_reps_data'])
+
+@app.route("/compare_set", methods=["POST"])
+def compare_sets():
+    if 'uploaded_metric' not in session:
+        return jsonify({"error": "No reference video uploaded yet."}), 400
+    if 'compare_metric' not in session:
+        return jsonify({"error": "No comparison video uploaded yet."}), 400
+    if "comparison_score" not in session:
+        return jsonify({"error": "No comparison analysis found."}), 400
+    
+    return jsonify(session['comparison_score'])
+
+@app.route("/stop_recording", methods=["POST"])
+def stop_recording():
+    try:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"recorded_video_{timestamp}.mp4"
+        video_path = os.path.join(UPLOAD_FOLDER, filename)
+        
+        # Process the recorded video
+        output_path, metrics = analyze_video_upload(video_path)
+        if output_path:
+            # Store metrics directly if it's already a dict
+            session['uploaded_metric'] = metrics
+            
+            # Calculate and store analysis
+            z_scores = calculate_z_scores_to_gold_standard(metrics)
+            session['analysis_data'] = z_scores
+            
+            # Convert all metrics to list format for frontend
+            reps_list = []
+            for rep_num, rep_data in metrics.items():
+                rep_dict = {k: float(v) if isinstance(v, (np.float32, np.float64)) else v 
+                          for k, v in rep_data.items()}
+                reps_list.append(rep_dict)
+            
+            session['analysis_reps_data'] = reps_list
+            
+            return send_file(output_path, mimetype='video/mp4')
+            
+        return jsonify({"error": "Failed to process video"}), 500
+            
+    except Exception as e:
+        print(f"Error processing recording: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=8000)
