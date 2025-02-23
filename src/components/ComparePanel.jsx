@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 
-const ComparePanel = ({ onCompareStateChange }) => {
+const ComparePanel = ({ onCompareStateChange, analysis, setAnalysis, setComparisonScore }) => {
   const [videoFile, setVideoFile] = useState(null);
   const fileInputRef = useRef(null);
 
@@ -11,26 +11,54 @@ const ComparePanel = ({ onCompareStateChange }) => {
         const formData = new FormData();
         formData.append('video', file);
 
-        // Change the URL to post to /compare_video
-        const response = await fetch('http://localhost:5000/compare_video', {
+        // First API call for video comparison
+        const compareResponse = await fetch('http://localhost:8000/compare_video', {
           method: 'POST',
           body: formData,
+          credentials: 'include',
         });
 
-        if (!response.ok) {
-          throw new Error('Upload failed');
+        if (!compareResponse.ok) {
+          // Try to parse error message from JSON response
+          const errorText = await compareResponse.text();
+          throw new Error(errorText || 'Failed to compare videos');
         }
 
-        // Create a blob URL from the response
-        const videoBlob = await response.blob();
-        const videoUrl = URL.createObjectURL(videoBlob);
+        // Clone the response before reading it as blob
+        const responseClone = compareResponse.clone();
         
-        // Set the uploaded video path from the blob URL
-        setVideoFile(videoUrl); 
-        onCompareStateChange(true); // Notify parent component to update state
+        // Check content type of response
+        const contentType = compareResponse.headers.get('content-type');
+        if (!contentType || !contentType.includes('video/mp4')) {
+          const errorText = await responseClone.text();
+          throw new Error(errorText || 'Invalid response format from server');
+        }
+
+        const videoBlob = await compareResponse.blob();
+        const videoUrl = URL.createObjectURL(videoBlob);
+        setVideoFile(videoUrl);
+
+        // Call the compare_set API
+        const compareSetResponse = await fetch('http://localhost:8000/compare_set', {
+          method: 'POST',
+          credentials: 'include',
+        });
+
+        if (!compareSetResponse.ok) {
+          const errorData = await compareSetResponse.json();
+          throw new Error(errorData.error || 'Failed to get comparison results');
+        }
+
+        const comparisonScore = await compareSetResponse.json();
+        setComparisonScore(comparisonScore);
       } catch (error) {
-        console.error('Error uploading video:', error);
-        alert('Failed to upload video');
+        console.error('Error processing video:', error);
+        alert(error.message || 'Failed to process video');
+        // Clean up if there was an error
+        if (videoFile) {
+          URL.revokeObjectURL(videoFile);
+          setVideoFile(null);
+        }
       }
     }
   };

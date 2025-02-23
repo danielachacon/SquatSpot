@@ -8,6 +8,9 @@ import Footer from './components/Footer';
 
 function App() {
   const [analysisData] = useState(null);
+  const [analysis, setAnalysis] = useState(null);
+  const [repsAnalysis, setRepsAnalysis] = useState(null);
+  const [comparisonScore, setComparisonScore] = useState(null);
 
   const handleUpload = async (file) => {
     const formData = new FormData();
@@ -59,14 +62,19 @@ function App() {
           <InputPanel 
             onUpload={handleUpload}
             onRecord={handleRecord}
+            setAnalysis={setAnalysis}
+            setRepsAnalysis={setRepsAnalysis}
           />
           <ComparePanel
             onCompare={handleCompare}
+            setComparisonScore={setComparisonScore}
           />
         </div>
         <div className="bottom-row">
           <AnalysisPanel 
-            analysisData={analysisData}
+            analysis={analysis}
+            repsAnalysis={repsAnalysis}
+            comparisonScore={comparisonScore}
           />
         </div>
       </main>

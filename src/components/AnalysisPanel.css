@@ -1,0 +1,17 @@
+.analysis-panel {
+  max-height: 100vh;  /* Full viewport height */
+  overflow-y: auto;   /* Enable vertical scrolling */
+  padding: 20px;
+}
+
+.analysis-content {
+  height: 100%;
+  overflow-y: auto;
+}
+
+.rep-data {
+  margin-bottom: 20px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+} 

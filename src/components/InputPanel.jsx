@@ -1,9 +1,10 @@
 import React, { useState, useRef } from "react";
 
-const InputPanel = ({ onUpload, onRecord, isComparing }) => {
+const InputPanel = ({ onUpload, onRecord, isComparing, analysis, setAnalysis, repsAnalysis, setRepsAnalysis }) => {
   const [showWebcam, setShowWebcam] = useState(false);
   const [uploadedVideo, setUploadedVideo] = useState(null);
   const fileInputRef = useRef(null);
+  const [isRecording, setIsRecording] = useState(false);
 
   const handleRecordClick = () => {
     setShowWebcam(!showWebcam);
@@ -21,28 +22,82 @@ const InputPanel = ({ onUpload, onRecord, isComparing }) => {
         const formData = new FormData();
         formData.append('video', file);
 
-        const response = await fetch('http://localhost:5000/upload_video', {
+        // First upload and process the video
+        const uploadResponse = await fetch('http://localhost:8000/upload_video', {
           method: 'POST',
           body: formData,
+          credentials: 'include',
         });
 
-        if (!response.ok) {
+        if (!uploadResponse.ok) {
           throw new Error('Upload failed');
         }
 
-        // Create a blob URL from the response
-        const videoBlob = await response.blob();
+        // Create a blob URL from the video response
+        const videoBlob = await uploadResponse.blob();
         const videoUrl = URL.createObjectURL(videoBlob);
-        
-        // Set the uploaded video path from the blob URL
-        setUploadedVideo(videoUrl); 
+        setUploadedVideo(videoUrl);
 
-        // Optionally hide the webcam if it was shown
+        // Hide webcam if it was shown
         setShowWebcam(false);
+
+        // Then get the analysis
+        const analysisResponse = await fetch('http://localhost:8000/analyze_video', {
+          method: 'POST',
+          credentials: 'include',
+        });
+
+        if (!analysisResponse.ok) {
+          throw new Error('Analysis failed');
+        }
+
+        const analysisData = await analysisResponse.json();
+        setAnalysis(analysisData);
+
+        // Then get the reps analysis
+        const repsAnalysisResponse = await fetch('http://localhost:8000/analyze_reps', {
+          method: 'POST',
+          credentials: 'include',
+        });
+
+        if (!repsAnalysisResponse.ok) {
+          throw new Error('Reps analysis failed');
+        }
+
+        const repsAnalysisData = await repsAnalysisResponse.json();
+        setRepsAnalysis(repsAnalysisData);
+
       } catch (error) {
         console.error('Error uploading video:', error);
-        alert('Failed to upload video');
+        alert(error.message || 'Failed to upload video');
       }
+    }
+  };
+
+  const handleStopRecording = async () => {
+    setIsRecording(false);
+    try {
+      // Your existing code for stopping recording...
+
+      // Get the metrics from your backend
+      const repsAnalysisResponse = await fetch('http://localhost:8000/analyze_reps', {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (!repsAnalysisResponse.ok) {
+        throw new Error('Reps analysis failed');
+      }
+
+      const repsData = await repsAnalysisResponse.json();
+      setRepsAnalysis(repsData);
+
+      // Now analyze the metrics with Llama
+      const aiResponse = await analyzeSquat(repsData);
+      setAiAnalysis(aiResponse);
+
+    } catch (error) {
+      console.error('Error processing recording:', error);
     }
   };
 
@@ -78,7 +133,7 @@ const InputPanel = ({ onUpload, onRecord, isComparing }) => {
       {showWebcam && (
         <div className="webcam-container" style={containerStyle}>
           <img
-            src="http://localhost:5000/video_feed"
+            src="http://localhost:8000/video_feed"
             alt="Webcam Feed with Pose Tracking"
             className="webcam-feed"
             style={{ 
