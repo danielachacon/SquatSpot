@@ -156,7 +156,6 @@ def analyze_video(video_source=0):
                 cv2.putText(image, stage, (10, 70), cv2.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
                 cv2.putText(image, str(counter), (10, 90), cv2.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
                 cv2.putText(image, str(current_rep['max_lateral_shift']), (10, 110), cv2.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
-
                 
                 # Get Squat Metrics Per Frame and Per Rep
                 if metrics["depth_left"] > 150 :
