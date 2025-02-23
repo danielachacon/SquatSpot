@@ -1,16 +1,16 @@
 from flask import Flask, Response, request, send_file, jsonify, session
 from flask_cors import CORS
 from posetracking import analyze_video_upload, analyze_video
+from analysis import calculate_z_scores_to_gold_standard, analyze_all_reps
 import os
 from datetime import datetime
+import pandas as pd
 
 app = Flask(__name__)
-CORS(app)
-
-app.secret_key = 'spotsquat' 
-
-currentUploadedMetric= None
-currentCompareMetric = None
+CORS(app, supports_credentials=True)
+app.secret_key = 'spotsquat'
+app.config['SESSION_COOKIE_SECURE'] = False
+app.config['SESSION_COOKIE_HTTPONLY'] = True
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads")
 OUTPUT_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "output")
@@ -35,13 +35,27 @@ def upload_video():
         video_path = os.path.join(UPLOAD_FOLDER, filename)
         file.save(video_path)
         
-        output_path, session['uploaded_metric'] = analyze_video_upload(video_path)
+        output_path, metrics = analyze_video_upload(video_path)
         if output_path:
-            # Log the metrics to the console
-            print("Metrics:", session['uploaded_metric'])  # Log metrics here
+            # Store metrics directly if it's already a dict
+            session['uploaded_metric'] = metrics
             
-            # Return the processed video file directly
+            # Calculate and store analysis - going back to the simpler version
+            z_scores = calculate_z_scores_to_gold_standard(metrics)
+            session['analysis_data'] = z_scores
+            
+            # Calculate and store reps analysis
+            reps_analysis = analyze_all_reps(metrics)
+            if isinstance(reps_analysis, pd.DataFrame):
+                reps_analysis = reps_analysis.where(pd.notnull(reps_analysis), None)
+                reps_analysis = reps_analysis.replace({float('nan'): None})
+                session['analysis_reps_data'] = reps_analysis.to_dict('records')
+            else:
+                session['analysis_reps_data'] = reps_analysis
+            
+            print("Session after upload:", dict(session))
             return send_file(output_path, mimetype='video/mp4')
+            
         return "Failed to process video", 500
             
     except Exception as e:
@@ -91,5 +105,24 @@ def processed_video():
     else:
         return "No video uploaded yet", 404
 
+@app.route("/analyze_video", methods=["POST"])
+def analyze_video_to_gold_standard():
+    print("Session during analysis:", dict(session))
+    if 'analysis_data' not in session:
+        print("No analysis_data in session")
+        return jsonify({"error": "No analysis data found. Please upload a video first."}), 400
+        
+    return jsonify(session['analysis_data'])
+
+@app.route("/analyze_reps", methods=["POST"])
+def analyze_reps():
+    print("Session during Rep analysis:", dict(session))  # Debug log
+    if 'analysis_reps_data' not in session:
+        print("No analysis_reps_data in session")  # Debug log
+        return jsonify({"error": "No analysis reps data found. Please upload a video first."}), 400
+
+    return jsonify(session['analysis_reps_data'])
+
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(debug=True, host="0.0.0.0", port=8000)
+    
