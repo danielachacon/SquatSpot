@@ -1,57 +1,66 @@
 import React, { useState, useRef } from "react";
 
-const InputPanel = ({ onRecord }) => {
-  const [isCameraActive, setIsCameraActive] = useState(false);
-  const [videoUrl, setVideoUrl] = useState(null);
+const InputPanel = ({ onUpload, onRecord, isComparing }) => {
+  const [showWebcam, setShowWebcam] = useState(false);
+  const [uploadedVideo, setUploadedVideo] = useState(null);
   const fileInputRef = useRef(null);
 
-  // Toggle Camera
-  const handleCameraToggle = () => {
-    setIsCameraActive((prev) => !prev);
-    setVideoUrl(null); // Clear uploaded video when switching to camera
-
-    if (!isCameraActive) {
-      onRecord(); // Start webcam processing
+  const handleRecordClick = () => {
+    setShowWebcam(!showWebcam);
+    if (!showWebcam) {
+      onRecord();
+      // Clear any existing uploaded video when starting recording
+      setUploadedVideo(null);
     }
   };
 
-  // Trigger File Upload
-  const handleUploadClick = () => {
-    setIsCameraActive(false); // Ensure webcam is off when uploading
-    fileInputRef.current.click();
-  };
-
-  // Handle File Upload
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
-    if (!file) return;
+    if (file) {
+      try {
+        const formData = new FormData();
+        formData.append('video', file);
 
-    const formData = new FormData();
-    formData.append("video", file);
+        const response = await fetch('http://localhost:5000/upload_video', {
+          method: 'POST',
+          body: formData,
+        });
 
-    try {
-      const response = await fetch("http://localhost:5000/upload_video", {
-        method: "POST",
-        body: formData,
-      });
+        if (!response.ok) {
+          throw new Error('Upload failed');
+        }
 
-      if (response.ok) {
-        setVideoUrl("http://localhost:5000/processed_video"); // New route for uploaded videos
-      } else {
-        alert("Error uploading video");
+        // Create a blob URL from the response
+        const videoBlob = await response.blob();
+        const videoUrl = URL.createObjectURL(videoBlob);
+        
+        // Set the uploaded video path from the blob URL
+        setUploadedVideo(videoUrl); 
+
+        // Optionally hide the webcam if it was shown
+        setShowWebcam(false);
+      } catch (error) {
+        console.error('Error uploading video:', error);
+        alert('Failed to upload video');
       }
-    } catch (error) {
-      console.error("Upload error:", error);
-      alert("Upload failed!");
     }
+  };
+
+  // Fixed size style for comparison mode
+  const containerStyle = isComparing ? {
+    height: '480px',
+    width: '100%',
+    transition: 'height 0.3s ease'
+  } : {
+    height: '70vh',
+    width: '100%'
   };
 
   return (
     <div className="panel input-panel">
-      {/* Action Buttons */}
       <div className="button-row large-buttons">
-        <button className="compare-button" onClick={handleCameraToggle}>
-          {isCameraActive ? "Stop Camera" : "Start Camera"}
+        <button className="compare-button" onClick={handleRecordClick}>
+          {showWebcam ? "Stop" : "Record"}
         </button>
 
         <input
@@ -61,26 +70,41 @@ const InputPanel = ({ onRecord }) => {
           accept="video/mp4,video/quicktime,video/x-msvideo"
           style={{ display: "none" }}
         />
-        <button className="compare-button" onClick={handleUploadClick}>
-          Upload Video
+        <button className="compare-button" onClick={() => fileInputRef.current.click()}>
+          Upload
         </button>
       </div>
 
-      {/* Display Webcam Stream */}
-      {isCameraActive && (
-        <div className="webcam-container">
+      {showWebcam && (
+        <div className="webcam-container" style={containerStyle}>
           <img
             src="http://localhost:5000/video_feed"
             alt="Webcam Feed with Pose Tracking"
             className="webcam-feed"
+            style={{ 
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              borderRadius: '8px'  // Keeping the rounded corners
+            }}
           />
         </div>
       )}
 
-      {/* Display Processed Uploaded Video */}
-      {!isCameraActive && videoUrl && (
-        <div className="video-container">
-          <img src={videoUrl} alt="Processed Video" className="webcam-feed" />
+      {uploadedVideo && !showWebcam && (
+        <div className="video-container" style={containerStyle}>
+          <video
+            src={uploadedVideo}
+            controls
+            autoPlay
+            className="uploaded-video"
+            style={{ 
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              borderRadius: '8px'
+            }}
+          />
         </div>
       )}
     </div>

@@ -1,28 +1,81 @@
-from flask import Flask, Response, request
-from posetracking import analyze_video  # Import function from posetracking
+from flask import Flask, Response, request, send_file, jsonify, session
+from flask_cors import CORS
+from posetracking import analyze_video_upload, analyze_video
 import os
+from datetime import datetime
 
 app = Flask(__name__)
+CORS(app)
 
-UPLOAD_FOLDER = "uploads"
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)  # Ensure folder exists
+app.secret_key = 'spotsquat' 
 
-video_path = None  # Store path of the latest uploaded video
+currentUploadedMetric= None
+currentCompareMetric = None
+
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads")
+OUTPUT_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "output")
+
+# Create necessary directories
+for folder in [UPLOAD_FOLDER, OUTPUT_FOLDER]:
+    if not os.path.exists(folder):
+        os.makedirs(folder)
 
 @app.route("/upload_video", methods=["POST"])
 def upload_video():
-    """Handles video uploads and saves them to the server."""
-    global video_path
-
     if "video" not in request.files:
         return "No video file found", 400
 
     file = request.files["video"]
-    video_path = os.path.join(UPLOAD_FOLDER, "uploaded_video.mp4")
-    file.save(video_path)
+    if file.filename == '':
+        return "No selected file", 400
 
-    return "Video uploaded successfully", 200
+    try:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"uploaded_video_{timestamp}.mp4"
+        video_path = os.path.join(UPLOAD_FOLDER, filename)
+        file.save(video_path)
+        
+        output_path, session['uploaded_metric'] = analyze_video_upload(video_path)
+        if output_path:
+            # Log the metrics to the console
+            print("Metrics:", session['uploaded_metric'])  # Log metrics here
+            
+            # Return the processed video file directly
+            return send_file(output_path, mimetype='video/mp4')
+        return "Failed to process video", 500
+            
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return f"Error processing video: {str(e)}", 500
+
+@app.route("/compare_video", methods=["POST"])
+def compare_upload_video():
+    if "video" not in request.files:
+        return "No video file found", 400
+
+    file = request.files["video"]
+    if file.filename == '':
+        return "No selected file", 400
+
+    try:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"uploaded_video_{timestamp}.mp4"
+        video_path = os.path.join(UPLOAD_FOLDER, filename)
+        file.save(video_path)
+        
+        output_path, session['compare_metric'] = analyze_video_upload(video_path)
+        if output_path:
+            # Log the metrics to the console
+            print("Metrics:", session['compare_metric'])  # Log metrics here
+            
+            # Return the processed video file directly
+            return send_file(output_path, mimetype='video/mp4')
+        return "Failed to process video", 500
+            
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return f"Error processing video: {str(e)}", 500
+
 
 @app.route("/video_feed")
 def video_feed():

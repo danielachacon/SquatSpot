@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import './App.css';
 import Header from './components/Header';
 import InputPanel from './components/InputPanel';
@@ -8,11 +8,25 @@ import Footer from './components/Footer';
 
 function App() {
   const [analysisData] = useState(null);
-  const [isComparing, setIsComparing] = useState(false);
 
-  const handleUpload = () => {
-    // Implement file upload logic
-    console.log('Upload clicked');
+  const handleUpload = async (file) => {
+    const formData = new FormData();
+    formData.append('video', file);
+
+    try {
+      const response = await fetch('http://localhost:5000/upload_video', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+      
+      console.log('Upload successful');
+    } catch (error) {
+      console.error('Error uploading video:', error);
+    }
   };
 
   const handleRecord = () => {
@@ -27,10 +41,6 @@ function App() {
 
   const handleTitleClick = () => {
     window.location.reload();
-  };
-
-  const handleCompareStateChange = (comparing) => {
-    setIsComparing(comparing);
   };
 
   return (
@@ -49,11 +59,9 @@ function App() {
           <InputPanel 
             onUpload={handleUpload}
             onRecord={handleRecord}
-            isComparing={isComparing}
           />
           <ComparePanel
             onCompare={handleCompare}
-            onCompareStateChange={handleCompareStateChange}
           />
         </div>
         <div className="bottom-row">

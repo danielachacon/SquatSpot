@@ -1,6 +1,8 @@
 import cv2
 import mediapipe as mp
 import numpy as np
+import os
+from datetime import datetime
 
 mp_drawing = mp.solutions.drawing_utils
 mp_pose = mp.solutions.pose
@@ -208,10 +210,6 @@ def analyze_video(video_source=0):
 
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
-
-            prev_landmarks = landmarks
-            prev_world_landmarks = prev_world_landmarks
-
     cap.release()
     cv2.destroyAllWindows()
 
@@ -234,4 +232,152 @@ def resize_and_crop(image, target_width=640, target_height=480):
     canvas[start_y:start_y + new_h, start_x:start_x + new_w] = resized
 
     return canvas
+
+def analyze_video_upload(video_source):
+    print(f"Starting video analysis from: {video_source}")
+    
+    # Create output directory if it doesn't exist
+    output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "output")
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    cap = cv2.VideoCapture(video_source)
+    
+    # Check if video opened successfully
+    if not cap.isOpened():
+        print(f"Error: Could not open video file: {video_source}")
+        return None, None
+
+    # Initialize metrics tracking variables
+    counter = 0
+    stage = None
+    apex = 1000
+    top_hip_position = 0
+    lateral_shift = 0
+    perSquatMetrics = {}
+    current_rep = {
+        'max_depth': float('inf'),
+        'min_spine_angle': float('inf'),
+        'max_lateral_shift': 0,
+        'max_forward_shift': 0,
+        'foot_distance': 0,
+        'grip_width': 0,
+        'elbow_angle': 0,
+        'hips_below_knees': False,
+        'knee_balance_bottom': None,
+        'bottom_position_held': 0,
+        'knee_imbalance': 0
+    }
+
+    # Get video properties and set up writer
+    frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = int(cap.get(cv2.CAP_PROP_FPS))
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_path = os.path.join(output_dir, f"processed_video_{timestamp}.mp4")
+    fourcc = cv2.VideoWriter_fourcc(*'avc1')
+    out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
+
+    frame_count = 0
+    with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                break
+
+            frame_count += 1
+            
+            try:
+                # Process frame
+                image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                image.flags.writeable = False
+                results = pose.process(image)
+                image.flags.writeable = True
+                image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+
+                # Extract Landmarks and calculate metrics
+                if results.pose_landmarks:
+                    landmarks = results.pose_landmarks.landmark
+                    world_landmarks = results.pose_world_landmarks.landmark
+                    metrics = calculate_statistics(landmarks, world_landmarks)
+                    
+                    # Track squat metrics
+                    if metrics["depth_left"] > 150:
+                        if stage != "top rep":
+                            if counter > 0:
+                                perSquatMetrics[counter] = current_rep.copy()
+                                current_rep = {
+                                    'max_depth': float('inf'),
+                                    'min_spine_angle': float('inf'),
+                                    'max_lateral_shift': 0,
+                                    'max_forward_shift': 0,
+                                    'foot_distance': 0,
+                                    'grip_width': 0,
+                                    'elbow_angle': metrics["elbow_angle"],
+                                    'hips_below_knees': metrics["hips_below_knees"],
+                                    'knee_balance_bottom': None,
+                                    'bottom_position_held': 0,
+                                    'knee_imbalance': 0
+                                }
+                        stage = "top rep"
+                        top_hip_position = metrics["lateral_hip_position"]
+                        lateral_shift = 0
+                    if metrics["depth_left"] < 150 and stage == 'top rep':
+                        stage = "bottom rep"
+                        counter += 1
+                    if stage == "bottom rep":
+                        current_rep['max_depth'] = min(current_rep['max_depth'], metrics["depth_left"]) if metrics["depth_left"] > 0 else current_rep['max_depth']
+                        current_rep['min_spine_angle'] = min(current_rep['min_spine_angle'], metrics["spine_angle_3"])
+                        lateral_shift = (top_hip_position - metrics["lateral_hip_position"]) * 100
+                        current_rep['max_lateral_shift'] = lateral_shift if abs(lateral_shift) > abs(current_rep['max_lateral_shift']) else current_rep['max_lateral_shift']
+                        current_rep['max_forward_shift'] = metrics['weight_shift'] if abs(metrics['weight_shift']) > abs(current_rep['max_forward_shift']) else current_rep['max_forward_shift']
+                        current_rep['foot_distance'] = max(current_rep['foot_distance'], metrics["foot_distance"])
+                        current_rep['grip_width'] = max(current_rep['grip_width'], metrics["grip_width"])
+                        current_rep['elbow_angle'] = max(current_rep['elbow_angle'], metrics["elbow_angle"])
+                        current_rep['hips_below_knees'] = current_rep['hips_below_knees'] or metrics["hips_below_knees"]
+
+                        if metrics["depth_left"] < 120:
+                            current_rep['bottom_position_held'] += 1
+                            if current_rep['knee_balance_bottom'] is None:
+                                current_rep['knee_balance_bottom'] = metrics["knee_balance"]
+                            knee_imbalance = metrics["knee_balance"][0] - metrics["knee_balance"][1]
+                            current_rep['knee_imbalance'] = knee_imbalance if abs(knee_imbalance) > abs(current_rep['knee_imbalance']) else current_rep['knee_imbalance']
+
+                    # Draw metrics on frame
+                    cv2.putText(image, f"Depth: {metrics['depth_left']:.1f}", (10, 30), cv2.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
+                    cv2.putText(image, f"Rep: {counter}", (10, 50), cv2.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
+                    cv2.putText(image, f"Stage: {stage}", (10, 70), cv2.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
+
+                # Draw landmarks
+                if results.pose_landmarks:
+                    mp_drawing.draw_landmarks(
+                        image, 
+                        results.pose_landmarks, 
+                        mp_pose.POSE_CONNECTIONS,
+                        mp_drawing.DrawingSpec(color=(0,255,0), thickness=2, circle_radius=2),
+                        mp_drawing.DrawingSpec(color=(0,0,255), thickness=2, circle_radius=2)
+                    )
+                
+                # Write frame to output video
+                out.write(image)
+                
+            except Exception as e:
+                print(f"Error processing frame {frame_count}: {str(e)}")
+                continue
+
+    # Save final rep if exists
+    if counter > 0 and stage == "bottom rep":
+        perSquatMetrics[counter] = current_rep
+
+    # Release resources
+    cap.release()
+    out.release()
+    cv2.destroyAllWindows()
+    
+    print(f"Successfully processed {frame_count} frames")
+    print(f"Processed video saved to: {output_path}")
+    print(f"Found {len(perSquatMetrics)} squats")
+    
+    return output_path, perSquatMetrics
 
