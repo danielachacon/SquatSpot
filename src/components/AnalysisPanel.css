@@ -1,17 +1,29 @@
-.analysis-panel {
-  max-height: 100vh;  /* Full viewport height */
-  overflow-y: auto;   /* Enable vertical scrolling */
-  padding: 20px;
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap');
+
+body {
+  font-family: 'Oswald', sans-serif;
+  font-size: 1.6rem;
+  line-height: 1.5;
+  font-weight: 50;
 }
 
+.analysis-panel {
+  max-height: 100vh;  /* Full viewport height */
+  overflow-y: auto;   /* Enable vertical scrolling for the entire panel */
+  padding: 20px;
+  background-color: #1c1c1c;
+  box-shadow: 0 2px 10px rgba(74, 64, 64, 0.1); /* Soft shadow for depth */
+}
+
+
 .analysis-content {
-  height: 100%;
-  overflow-y: auto;
+  /* Removed height and overflow properties to allow the parent to handle scrolling */
+  padding: 0;
 }
 
 .rep-data {
   margin-bottom: 20px;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-} 
+  padding: 15px; /* Increased padding for better spacing */
+  background-color: #1c1c1c;/* White background for rep data */
+}
+
