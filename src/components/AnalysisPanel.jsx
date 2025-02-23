@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
+import './AnalysisPanel.css';
 
 // Function to analyze squat metrics
 async function analyzeSquat(metrics) {
@@ -50,49 +51,62 @@ const AnalysisPanel = ({ analysis, repsAnalysis, comparisonScore }) => {
     <div className="panel analysis-panel">
       <h2>ANALYSIS</h2>
       
-      {/* Show comparison score first if it exists */}
-      {comparisonScore !== null && comparisonScore !== undefined && (
-        <div className="comparison-score">
-          <h3>Comparison Score</h3>
-          <p>{typeof comparisonScore === 'number' ? comparisonScore.toFixed(2) : comparisonScore}</p>
-        </div>
-      )}
+      <div className="summary-grid">
+        {/* AI Analysis Box - First */}
+        {aiAnalysis && (
+          <div className="summary-box">
+            <h3>AI Form Analysis</h3>
+            <div className="ai-content">
+              <ReactMarkdown>{aiAnalysis}</ReactMarkdown>
+            </div>
+          </div>
+        )}
 
-      {/* AI Analysis Section */}
-      {aiAnalysis && (
-        <div className="ai-analysis">
-          <h3>AI Form Analysis</h3>
-          <ReactMarkdown>{aiAnalysis}</ReactMarkdown>
-        </div>
-      )}
+        {/* Overall Summary Box - Second */}
+        {analysisData && (
+          <div className="summary-box">
+            <h3>Overall Summary</h3>
+            {Object.entries(analysisData || {}).map(([metric, score]) => {
+              const numericScore = parseFloat(score);
+              return (
+                <p key={metric}>
+                  <span className="metric-name">{metric}</span>
+                  <span className="metric-value">
+                    {!isNaN(numericScore) ? numericScore.toFixed(2) : 'N/A'}
+                  </span>
+                </p>
+              );
+            })}
+          </div>
+        )}
 
-      {analysisData && (
-        <div className="analysis-content">
-          <h3>Overall Summary (Z-Scores)</h3>
-          {Object.entries(analysisData || {}).map(([metric, score]) => {
-            const numericScore = parseFloat(score);
-            return (
-              <p key={metric}>
-                {metric}: {!isNaN(numericScore) ? numericScore.toFixed(2) : 'N/A'}
-              </p>
-            );
-          })}
-          
-          <h3>Rep Details</h3>
-          {Array.isArray(repsAnalysis) && repsAnalysis.map((rep, index) => (
-            rep && (
-              <div key={index} className="rep-data">
-                <h4>Rep {index + 1}</h4>
-                {Object.entries(rep).map(([metric, value]) => (
-                  <p key={metric}>
-                    {metric}: {value !== null ? Number(value).toFixed(2) : 'N/A'}
-                  </p>
-                ))}
-              </div>
-            )
-          ))}
-        </div>
-      )}
+        {/* Comparison Score Box */}
+        {comparisonScore !== null && comparisonScore !== undefined && (
+          <div className="summary-box">
+            <h3>Comparison Score</h3>
+            <p>{typeof comparisonScore === 'number' ? comparisonScore.toFixed(2) : comparisonScore}</p>
+          </div>
+        )}
+      </div>
+
+      <h3>Rep Details</h3>
+      <div className="reps-grid">
+        {Array.isArray(repsAnalysis) && repsAnalysis.map((rep, index) => (
+          rep && (
+            <div key={index} className="rep-data">
+              <h4>Rep {index + 1}</h4>
+              {Object.entries(rep).map(([metric, value]) => (
+                <p key={metric}>
+                  <span className="metric-name">{metric}</span>
+                  <span className="metric-value">
+                    {value !== null ? Number(value).toFixed(2) : 'N/A'}
+                  </span>
+                </p>
+              ))}
+            </div>
+          )
+        ))}
+      </div>
     </div>
   );
 };

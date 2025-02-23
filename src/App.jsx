@@ -4,6 +4,7 @@ import Header from './components/Header';
 import InputPanel from './components/InputPanel';
 import ComparePanel from './components/ComparePanel';
 import AnalysisPanel from './components/AnalysisPanel';
+import AnalysisGuidePanel from './components/AnalysisGuidePanel';
 import Footer from './components/Footer';
 
 function App() {
@@ -70,12 +71,13 @@ function App() {
             setComparisonScore={setComparisonScore}
           />
         </div>
-        <div className="bottom-row">
+        <div className="analysis-sections">
           <AnalysisPanel 
             analysis={analysis}
             repsAnalysis={repsAnalysis}
             comparisonScore={comparisonScore}
           />
+          <AnalysisGuidePanel />
         </div>
       </main>
     </div>

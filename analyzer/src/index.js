@@ -15,7 +15,6 @@ export default {
 			// Parse the incoming request
 			const { type, data } = await request.json();
 
-			// Call the AI model using the 'AI' binding from the environment
 			if (type === "rep") {
 				const response = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
 					prompt: "Here is context about Squat Statistics: " 
@@ -50,10 +49,10 @@ export default {
 						+ "Spine Angle: If Z score high, then your back is not straight. If large negative Z score, then back is rounded forward. If large positive Z score, back is too upright."
 						+ "Foot Distance: Tells wide vs short foot stance. If large positive Z score, then you are wide. If large negative Z score, then you are narrow."
 						+ "Grip Width: If large positive Z score, then Grip is wide. If large negative Z score, then Grip is narrow."
-						+ "Use your judgement of Z-Scores to determine if the statistic is good (within the a reasonable range of the golden statistic) or bad. A bad Z score is over +- 1.5. Explain your reasoning as well as your analysis of each individual statistic."
+						+ "Use your judgement of Z-Scores to determine if the statistic is good (within the a reasonable range of the golden statistic) or bad. ***A negligible Z score is between -0.5 and 0.5***. A bad Z score is over +- 1.5. Explain your reasoning as well as your analysis of each individual statistic."
 						+ "Here is the Squat Statistics: " 
 						+ JSON.stringify(data)
-						+ "At the end, give a score out of 100 based on the squat form."
+						+ "At the end, make a conclusion about the squat form. DO NOT GIVE /100 SCORE"
 					}],
 					max_tokens: 500
 				});

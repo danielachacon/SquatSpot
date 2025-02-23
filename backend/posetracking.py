@@ -151,12 +151,18 @@ def analyze_video(video_source=0):
                 apex = min((world_landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].y + world_landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].y) / 2, apex) # Bottom of Squat
                 
                 # Display the metrics on the image
-                cv2.putText(image, str(metrics["depth_left"]), (10, 30), cv2.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
-                cv2.putText(image, str(metrics["knee_balance"][0] - metrics["knee_balance"][1]), (10, 50), cv2.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
-                cv2.putText(image, stage, (10, 70), cv2.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
-                cv2.putText(image, str(counter), (10, 90), cv2.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
-                cv2.putText(image, str(current_rep['max_lateral_shift']), (10, 110), cv2.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
-                
+                cv2.putText(image, "Depth: " + str(metrics["depth_left"]), (10, 30), cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
+                cv2.putText(image, "Knee Imbalance: " + str(metrics["knee_balance"][0] - metrics["knee_balance"][1]), (10, 50), cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
+                cv2.putText(image, stage, (10, 70), cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
+                cv2.putText(image, "Rep: " + str(counter), (10, 90), cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
+                cv2.putText(image, "Lateral Shift: " + str(current_rep['max_lateral_shift']), (10, 110), cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
+                cv2.putText(image, "Spine angle 1: " + str(metrics['spine_angle_1']), (10, 130), cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
+                cv2.putText(image, "Spine angle 3: " + str(metrics['spine_angle_3']), (10, 150), cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
+                cv2.putText(image, "Grip Width: " + str(metrics['grip_width']), (10, 170), cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
+                cv2.putText(image, "Elbow Angle: " + str(metrics['elbow_angle']), (10, 190), cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
+                cv2.putText(image, "Foot Distance: " + str(metrics['foot_distance']), (10, 210), cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
+                cv2.putText(image, "Hips Below Knees: " + str(metrics['hips_below_knees']), (10, 230), cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
+                cv2.putText(image, "Bottom Position Held: " + str(current_rep['bottom_position_held']), (10, 270), cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
                 # Get Squat Metrics Per Frame and Per Rep
                 if metrics["depth_left"] > 150 :
                     if stage != "top rep":

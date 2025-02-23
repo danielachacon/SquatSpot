@@ -1,17 +1,30 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 const ComparePanel = ({ onCompareStateChange, analysis, setAnalysis, setComparisonScore }) => {
   const [videoFile, setVideoFile] = useState(null);
   const fileInputRef = useRef(null);
 
+  // Cleanup function for video URL
+  useEffect(() => {
+    return () => {
+      if (videoFile) {
+        URL.revokeObjectURL(videoFile);
+      }
+    };
+  }, [videoFile]);
+
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (file) {
       try {
+        // Cleanup previous video URL if it exists
+        if (videoFile) {
+          URL.revokeObjectURL(videoFile);
+        }
+
         const formData = new FormData();
         formData.append('video', file);
 
-        // First API call for video comparison
         const compareResponse = await fetch('http://localhost:8000/compare_video', {
           method: 'POST',
           body: formData,
@@ -19,34 +32,23 @@ const ComparePanel = ({ onCompareStateChange, analysis, setAnalysis, setComparis
         });
 
         if (!compareResponse.ok) {
-          // Try to parse error message from JSON response
           const errorText = await compareResponse.text();
-          throw new Error(errorText || 'Failed to compare videos');
+          throw new Error(`Compare failed: ${errorText || compareResponse.statusText}`);
         }
 
         // Clone the response before reading it as blob
         const responseClone = compareResponse.clone();
-        
-        // Check content type of response
-        const contentType = compareResponse.headers.get('content-type');
-        if (!contentType || !contentType.includes('video/mp4')) {
-          const errorText = await responseClone.text();
-          throw new Error(errorText || 'Invalid response format from server');
-        }
-
-        const videoBlob = await compareResponse.blob();
+        const videoBlob = await responseClone.blob();
         const videoUrl = URL.createObjectURL(videoBlob);
         setVideoFile(videoUrl);
 
-        // Call the compare_set API
         const compareSetResponse = await fetch('http://localhost:8000/compare_set', {
           method: 'POST',
           credentials: 'include',
         });
 
         if (!compareSetResponse.ok) {
-          const errorData = await compareSetResponse.json();
-          throw new Error(errorData.error || 'Failed to get comparison results');
+          throw new Error(`Compare set failed: ${compareSetResponse.statusText}`);
         }
 
         const comparisonScore = await compareSetResponse.json();

@@ -48,22 +48,17 @@
 /* MAIN CONTENT LAYOUT */
 .main-content {
   flex: 1;
-  width: 100%;
-  height: calc(100vh - 100px);
-  padding: 0 2rem;
+  padding: 2rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  overflow-y: auto;
+  gap: 2rem;
 }
 
 .content-wrapper {
-  width: 95%;
-  height: 95%;
   display: flex;
   gap: 2rem;
-  padding: 0.5rem;
-  margin: 0 auto;
+  min-height: 450px;
+  align-items: stretch;
 }
 
 /* PANEL STYLING */
@@ -94,8 +89,8 @@
   font-weight: 600;
   letter-spacing: 2px;
   text-transform: uppercase;
-  background-color: #dc2626; /* Same color for all */
-  color: white;
+  background-color: #232937; /* Same color for all */
+  color: #dc2626;
   border: none;
   border-radius: 12px;
   cursor: pointer;
@@ -104,7 +99,7 @@
 
 .action-button:hover,
 .compare-button:hover {
-  background-color: #ef4444;
+  background-color: #303c59;
   transform: scale(1.05);
 }
 
@@ -195,7 +190,7 @@
 }
 
 .bottom-row {
-  width: calc(100% - 4rem);
+  width: calc(100% - 4rem);  /* Full width minus padding */
   margin: 0 auto;
   display: flex;
   min-height: 200vh;
@@ -229,4 +224,11 @@
   letter-spacing: 2px;
   margin-bottom: 1rem;
   text-align: center;
+}
+
+.analysis-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  width: 100%;
 }

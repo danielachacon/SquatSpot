@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 
 const InputPanel = ({ onUpload, onRecord, isComparing, analysis, setAnalysis, repsAnalysis, setRepsAnalysis }) => {
   const [showWebcam, setShowWebcam] = useState(false);
@@ -6,12 +6,24 @@ const InputPanel = ({ onUpload, onRecord, isComparing, analysis, setAnalysis, re
   const fileInputRef = useRef(null);
   const [isRecording, setIsRecording] = useState(false);
 
+  // Cleanup function for uploaded video URL
+  useEffect(() => {
+    return () => {
+      if (uploadedVideo) {
+        URL.revokeObjectURL(uploadedVideo);
+      }
+    };
+  }, [uploadedVideo]);
+
   const handleRecordClick = () => {
     setShowWebcam(!showWebcam);
     if (!showWebcam) {
       onRecord();
       // Clear any existing uploaded video when starting recording
-      setUploadedVideo(null);
+      if (uploadedVideo) {
+        URL.revokeObjectURL(uploadedVideo);
+        setUploadedVideo(null);
+      }
     }
   };
 
@@ -19,10 +31,15 @@ const InputPanel = ({ onUpload, onRecord, isComparing, analysis, setAnalysis, re
     const file = event.target.files[0];
     if (file) {
       try {
+        // Cleanup previous video URL if it exists
+        if (uploadedVideo) {
+          URL.revokeObjectURL(uploadedVideo);
+          setUploadedVideo(null);
+        }
+
         const formData = new FormData();
         formData.append('video', file);
 
-        // First upload and process the video
         const uploadResponse = await fetch('http://localhost:8000/upload_video', {
           method: 'POST',
           body: formData,
@@ -33,7 +50,6 @@ const InputPanel = ({ onUpload, onRecord, isComparing, analysis, setAnalysis, re
           throw new Error('Upload failed');
         }
 
-        // Create a blob URL from the video response
         const videoBlob = await uploadResponse.blob();
         const videoUrl = URL.createObjectURL(videoBlob);
         setUploadedVideo(videoUrl);
@@ -70,6 +86,11 @@ const InputPanel = ({ onUpload, onRecord, isComparing, analysis, setAnalysis, re
       } catch (error) {
         console.error('Error uploading video:', error);
         alert(error.message || 'Failed to upload video');
+        // Clean up if there was an error
+        if (uploadedVideo) {
+          URL.revokeObjectURL(uploadedVideo);
+          setUploadedVideo(null);
+        }
       }
     }
   };
@@ -77,7 +98,11 @@ const InputPanel = ({ onUpload, onRecord, isComparing, analysis, setAnalysis, re
   const handleStopRecording = async () => {
     setIsRecording(false);
     try {
-      // Your existing code for stopping recording...
+      // Clean up any existing uploaded video
+      if (uploadedVideo) {
+        URL.revokeObjectURL(uploadedVideo);
+        setUploadedVideo(null);
+      }
 
       // Get the metrics from your backend
       const repsAnalysisResponse = await fetch('http://localhost:8000/analyze_reps', {
@@ -92,12 +117,13 @@ const InputPanel = ({ onUpload, onRecord, isComparing, analysis, setAnalysis, re
       const repsData = await repsAnalysisResponse.json();
       setRepsAnalysis(repsData);
 
-      // Now analyze the metrics with Llama
-      const aiResponse = await analyzeSquat(repsData);
-      setAiAnalysis(aiResponse);
-
     } catch (error) {
       console.error('Error processing recording:', error);
+      // Clean up if there was an error
+      if (uploadedVideo) {
+        URL.revokeObjectURL(uploadedVideo);
+        setUploadedVideo(null);
+      }
     }
   };
 
